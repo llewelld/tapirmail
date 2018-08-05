@@ -1,0 +1,12 @@
+dir <Obey$Dir>
+
+If "<GCC$Dir>" = "" Then Error "Ensure GCC$Dir from GCC has been set before attempting to build"
+If "<OSLib$Dir>" = "" Then Error "Ensure OSLib$Dir from OSLib has been set before attempting to build"
+If "<StubsG$Dir>" = "" Then Error "Ensure StubsG$Dir from StubsG has been set before attempting to build"
+
+BuildBlowfish
+BuildMD5
+BuildMime
+BuildTapirMail
+
+echo Build complete

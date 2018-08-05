@@ -1,0 +1,110 @@
+//////////////////////////////////////////////////////////////////
+// TapirMail
+//
+// C program shell for rapid application development
+// The Flying Pig!
+// Started 17/7/2003
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+// Includes
+
+#include "oslib/types.h"
+
+//////////////////////////////////////////////////////////////////
+// Defines
+
+//#define _DEBUG
+
+#define VERSION_STRING_SHORT  "1.09"
+#define VERSION_STRING_LONG   "1.09 (05-Jan-2013)"
+#define VERSION_INT           (1.09)
+
+#define ADDRESS_FILE_VERSION  (100)
+
+#define FLAGS                 ((wimp_poll_flags)0x3000)
+
+#ifndef TRUE
+#define TRUE                  (1)
+#endif
+#ifndef FALSE
+#define FALSE                 (0)
+#endif
+
+#define MESSAGES              "<TapirMail$Dir>.Messages"
+#define TEMPLATES             "<TapirMail$Dir>.Templates"
+#define EXAMPLE               "<TapirMail$Dir>.Example"
+#define SPRITES               "<TapirMail$Dir>.Sprites"
+#define EMOTICONS             "<TapirMail$Dir>.Emoticons"
+
+#define IYONIX_SOCKET_ERR     (0x20e00)
+
+#define Report_Text0          (0x054c80)
+
+#define message_URL_LAUNCH    (0x4af80u)
+#define message_HELP          (0x502u)
+
+
+#if defined _DEBUG
+#define REPORT                Report
+#define REPORTVAR             ReportVar
+void    Report                (char * szMessage);
+void    ReportVar             (char * szFormat, int nVariable);
+#else
+#define REPORT(szMessage)     /* szMessage */
+#define REPORTVAR(szMessage, nVariable)    /* szMessage, nVariable */
+#endif
+
+//////////////////////////////////////////////////////////////////
+// Structures
+
+//////////////////////////////////////////////////////////////////
+// Function prototypes
+
+void    Receive               (wimp_block *pcBlock);
+void    Quit                  (void);
+char  * Tag                   (char * szTag);
+wimp_i  CreateIconbarIcon     (char * szSprite, int nWidth, int nHeight);
+wimp_w  LoadTemplate          (char * szWindowTitle);
+wimp_w  LoadTemplateSprites   (char * szWindowTitle, osspriteop_area * pcSpriteArea);
+void    OpenWindow            (wimp_block *pcBlock);
+void    MouseClick            (wimp_block *pcBlock);
+void    OpenWindowInit        (wimp_w whWindow);
+void    CloseWindow           (wimp_block *pcBlock);
+void    CloseWindowHandle     (wimp_w whWindow);
+wimp_menu  * CreateMenu       (char * szMenu);
+void    OpenMenu              (wimp_menu * pcMenu, int nXpos, int nYpos);
+void    MenuSelect            (wimp_block *pcBlock);
+void    UserDragBox           (wimp_block *pcBlock);
+void    Keys                  (wimp_block *pcBlock);
+char  * GetIconText           (wimp_w whWindow, wimp_i ihIcon);
+bool    GetIconSelectionState (wimp_w whWindow, wimp_i ihIcon);
+void    SetIconSelectionState (bool boState, wimp_w whWindow, wimp_i ihIcon);
+void    SetIconText           (char * szText, wimp_w whWindow, wimp_i ihIcon);
+void    DataSave              (wimp_block *pcBlock);
+void    DataSaveAck           (wimp_block *pcBlock);
+void    DataLoad              (wimp_block *pcBlock);
+void    RamFetch              (wimp_block *pcBlock);
+void    RamTransmit           (wimp_block *pcBlock);
+//void    DataOpen              (wimp_block *pcBlock);
+void    Help                  (wimp_block *pcBlock);
+char  * TagCheck              (char * szTag);
+void    SetIconGreyness       (bool boState, wimp_w whWindow, wimp_i ihIcon);
+osspriteop_area * LoadSprites (char * szFileName);
+char  * LoadFile              (char * szFileName, int * pnSize);
+void    ShowWarningTag        (char * szTag);
+void    ShowWarning           (os_error * sError);
+void    OpenWindowInitCentre  (wimp_w whWindow);
+void    DragSprite            (wimp_w whWindow, wimp_i ihIcon, char * szIconName);
+void    DragBox               (wimp_w whWindow, wimp_i ihIcon);
+void    OpenURL               (char * szURL);
+void    OpenURLReturned       (wimp_block *pcBlock);
+void    Acknowledged          (wimp_block *pcBlock);
+void    SaveSave              (void);
+inline void err               (os_error * sError);
+void    CloseWarning          (void);
+void    CloseMenu             (void);
+//void    FileLoaded            (char * pcMemory, int nSize);
+void    SaveFile              (char * szFileName);
+
+

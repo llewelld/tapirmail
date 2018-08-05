@@ -1,0 +1,5 @@
+dir <Obey$Dir>
+
+gcc -mthrowback -IOSLib: -IOSLibSupport: -IStubsG: -c -Werror -Wall -W Blowfish.c
+
+echo Build complete: Blowfish

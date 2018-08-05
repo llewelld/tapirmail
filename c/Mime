@@ -1,0 +1,1549 @@
+/////////////////////////////////////////////////////////////////
+// Mime
+//
+// C program shell for rapid application development
+// The Flying Pig!
+// Started 17/7/2003
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+// Includes
+
+#include "oslib/osmodule.h"
+#include "oslib/messagetrans.h"
+#include "oslib/wimp.h"
+#include "oslib/dragasprite.h"
+#include "oslib/macros.h"
+#include "oslib/osfile.h"
+#include "oslib/osfind.h"
+#include "oslib/osgbpb.h"
+#include "oslib/resolver.h"
+#include "oslib/osbyte.h"
+#include "oslib/colourtrans.h"
+#include "oslib/wimpspriteop.h"
+#include "oslib/territory.h"
+#include "oslib/osword.h"
+#include "oslib/mimemap.h"
+
+#if !defined _STANDALONE_TEST
+#include "flexlib/flex.h"
+#endif
+
+#include "Mime.h"
+#include "TapirMail.h"
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <ctype.h>
+#include <stddef.h>
+
+#include <clib/kernel.h>
+
+//////////////////////////////////////////////////////////////////
+// Defines
+
+//////////////////////////////////////////////////////////////////
+// Structures
+
+//////////////////////////////////////////////////////////////////
+// Function prototypes
+
+//void DeMIME (char * pcInput, int nSize);
+bool BoundaryFind (char * szInput, int nPos, int * pnMultiPre, int * pnMultiPost, int nSize, char * szBoundary, bool * pboFound);
+void GetHeaderAttribute (char * szHeaderVal, char * szAttributeName, char * szResult);
+char ConvertHex (char * acHex);
+void CreateMIMEListRecurse (char * * ppcInput, int nSize, int nOffset);
+
+//////////////////////////////////////////////////////////////////
+// Global variables
+
+static int               gnFileNumber;
+static int               gnListMax;
+static int               gnListPos;
+static MIMEDetails       **gpanList;
+static char const gacCharList[64]
+  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+//////////////////////////////////////////////////////////////////
+// Main application
+
+//// Respond to swi errors
+//inline void err (os_error * sError)
+//{
+//  if (sError)
+//  {
+//    ShowWarning (sError);
+//  }
+//}
+//
+//
+////////////////////////////////////////////////////////////////////
+//// main
+//int main (int argc, char * argv[])
+//{
+//  char                        *szFileIn;
+//  char                        *pcInput;
+//  int                         nSize;
+//  char                        szHeaderVal[1024] = "";
+//
+//  if (argc != 2)
+//  {
+//    printf ("Syntax: *Mime <File in>\n");
+//    return 0;
+//  }
+//  szFileIn = argv[1];
+//
+//  // Reset the file number
+//  gnFileNumber = 0;
+//
+//  // Load the file
+//  pcInput = LoadFile (argv[1], & nSize);
+//
+//  if (pcInput)
+//  {
+//    // Check if it's mime
+//    GetHeaderValue ("MIME-Version", pcInput, nSize, szHeaderVal,
+//      sizeof (szHeaderVal));
+////    printf ("- %s -\n", szHeaderVal);
+//
+//    if (strcmp (szHeaderVal, "1.0") == 0)
+//    {
+//      // This is a MIME email
+//      DeMIME (pcInput, nSize);
+//    }
+//
+//    // Free up the memory allocated for the input file
+//    free (pcInput);
+//  }
+//
+//  return 0;
+//}
+
+//////////////////////////////////////////////////////////////////
+// Return the value of a header field
+void GetHeaderValue (char * szHeader, char * pcMailStart, int nMailSize, char * szBuffer, int nBufferSize)
+{
+  int                         nLineLen;
+  int                         nPos;
+  bool                        boHeaderFound;
+  bool                        boNotFound;
+  int                         nHeaderEnd;
+  int                         nCopyPos;
+  int                         nHeaderValLen;
+  bool                        boMoreHeader;
+
+  szBuffer[0] = 0;
+  nPos = 0;
+  boHeaderFound = FALSE;
+  boNotFound = FALSE;
+  while ((!boNotFound) && (!boHeaderFound))
+  {
+    // Find the length and separator
+    nHeaderEnd = 0;
+    nLineLen = 0;
+    while ((pcMailStart[nPos + nLineLen] != 0x0a)
+      && (pcMailStart[nPos + nLineLen] != 0x0d)
+      && ((nPos + nLineLen) < nMailSize))
+    {
+      nLineLen++;
+      if ((nHeaderEnd == 0) && (pcMailStart[nPos + nLineLen] == ':'))
+      {
+        nHeaderEnd = nLineLen;
+      }
+    }
+
+    // See if we found a separator
+    if (nHeaderEnd != 0)
+    {
+      if ((strnlcmp (szHeader, pcMailStart + nPos, nHeaderEnd) == 0))
+      {
+        // Found the header field
+        boHeaderFound = TRUE;
+
+        // Strip spaces after the colon
+        do
+        {
+          nHeaderEnd++;
+        } while ((nHeaderEnd < nLineLen)
+            && ((pcMailStart[nPos + nHeaderEnd] == 0x20)
+            || (pcMailStart[nPos + nHeaderEnd] == '\t')));
+
+        nHeaderValLen = nLineLen - nHeaderEnd;
+
+        // Read the header value
+        nCopyPos = 0;
+        boMoreHeader = TRUE;
+        while (boMoreHeader
+          && ((nCopyPos + nHeaderValLen + 1) < nBufferSize))
+        {
+          strncpy (szBuffer + nCopyPos, pcMailStart + nPos + nHeaderEnd,
+            nHeaderValLen);
+          nCopyPos += nHeaderValLen;
+
+          nPos += nLineLen + 1;
+
+          if ((pcMailStart[nPos] == 0x20) || (pcMailStart[nPos] == '\t'))
+          {
+            nHeaderEnd = 0;
+            nLineLen = 0;
+            while ((pcMailStart[nPos + nLineLen] != 0x0a)
+              && (pcMailStart[nPos + nLineLen] != 0x0d)
+              && ((nPos + nLineLen) < nMailSize))
+            {
+              if ((nHeaderEnd == 0)
+                && (((pcMailStart[nPos + nLineLen]) != 0x20)
+                && ((pcMailStart[nPos + nLineLen]) != '\t')))
+              {
+                nHeaderEnd = nLineLen;
+              }
+              nLineLen++;
+            }
+            nHeaderValLen = nLineLen - nHeaderEnd;
+
+            szBuffer[nCopyPos] = 0x20;
+            nCopyPos++;
+            szBuffer[nCopyPos] = 0;
+          }
+          else
+          {
+            szBuffer[nCopyPos] = 0;
+            boMoreHeader = FALSE;
+          }
+        }
+      }
+    }
+
+    nPos += nLineLen + 1;
+
+    if ((nPos >= nMailSize) || (nLineLen == 0))
+    {
+      boNotFound = TRUE;
+    }
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////
+//// Load a file into a block of memory
+//char * LoadFile (char * szFilename, int * pnSize)
+//{
+//  char                        *pcMemory;
+//  int                         nSize;
+//
+//  xosfile_read_stamped_no_path (szFilename, NULL, NULL, NULL, & nSize,
+//    NULL, NULL);
+//
+//  if (nSize > 0)
+//  {
+//    if (pnSize)
+//    {
+//      *pnSize = nSize;
+//    }
+//    pcMemory = malloc (nSize);
+//
+//    if (pcMemory)
+//    {
+//      err (xosfile_load_stamped_no_path (szFilename, pcMemory,  NULL,
+//        NULL, NULL, NULL, NULL));
+//    }
+//  }
+//  else
+//  {
+//    pcMemory = NULL;
+//  }
+//
+//  return pcMemory;
+//}
+//
+////////////////////////////////////////////////////////////////////
+//// Decrypt a MIME encoded message
+//void DeMIME (char * pcInput, int nSize)
+//{
+//  char                        szHeaderVal[1024] = "";
+//  char                        szFilename[1024] = "";
+//  char                        szBoundary[1024] = "";
+//  char                        szContentType[1024] = "";
+//  int                         nPos;
+//  CTENCODING                  eEncoding;
+//  bool                        boMore;
+//  bool                        boFound;
+//  int                         nMultiStartPre;
+//  int                         nMultiStartPost;
+//  int                         nMultiEndPre;
+//  int                         nMultiEndPost;
+//  char                        *pcDecoded;
+//  int                         nSizeOut;
+//  int                         nConvertPos;
+//  int                         nFileType;
+//  int                         nExtension;
+//
+//  GetHeaderValue ("Content-Type:", pcInput, nSize, szHeaderVal,
+//    sizeof (szHeaderVal));
+//
+//  if (strnlcmp (szHeaderVal, "multipart/", 10) == 0)
+//  {
+//    // This is a multipart message
+//
+//    // Find the sections and recursively re-evaluate them
+//    GetHeaderAttribute (szHeaderVal, "boundary=", szBoundary);
+//
+//    // Find the end of the header
+//    nPos = 0;
+//    while ((nPos < (nSize - 1))
+//      && (((pcInput[nPos] != 0x0a) && (pcInput[nPos] != 0x0d))
+//      || ((pcInput[nPos + 1] != 0x0a) && (pcInput[nPos + 1] != 0x0a))))
+//    {
+//      nPos++;
+//    }
+//    // Move past the separating line
+//    nPos += 2;
+//
+//    // Now we need to search through for each boundary
+//    boMore = BoundaryFind (pcInput, nPos, & nMultiStartPre,
+//      & nMultiStartPost, nSize, szBoundary, NULL);
+//    while ((boMore) && (nMultiStartPost < nSize))
+//    {
+//      boMore = BoundaryFind (pcInput, nMultiStartPost, & nMultiEndPre,
+//        & nMultiEndPost, nSize, szBoundary, & boFound);
+//
+//      if (boFound)
+//      {
+//        DeMIME (pcInput + nMultiStartPost,
+//          nMultiEndPre - nMultiStartPost - 1);
+//      }
+//      else
+//      {
+//        printf ("Incorrect MIME formatting\n");
+//      }
+//
+//      nMultiStartPre = nMultiEndPre;
+//      nMultiStartPost = nMultiEndPost;
+//    }
+//  }
+//  else
+//  {
+//    // This is not a multipart message
+//
+//    // What's the encoding?
+//    eEncoding = CTENCODING_PLAIN;
+//    GetHeaderValue ("Content-Transfer-Encoding", pcInput, nSize, szHeaderVal,
+//      sizeof (szHeaderVal));
+//
+//    if (strlcmp (szHeaderVal, "quoted-printable") == 0)
+//    {
+//      eEncoding = CTENCODING_QUOTEDPRINTABLE;
+//    }
+//    if (strlcmp (szHeaderVal, "base64") == 0)
+//    {
+//      eEncoding = CTENCODING_BASE64;
+//    }
+//
+//    // What's the filename?
+//    GetHeaderValue ("Content-Disposition", pcInput, nSize, szHeaderVal,
+//      sizeof (szHeaderVal));
+//
+//    GetHeaderAttribute (szHeaderVal, "filename=", szFilename);
+//
+//    GetHeaderValue ("Content-Type", pcInput, nSize, szContentType,
+//      sizeof (szContentType));
+//    if (strcmp (szFilename, "") == 0)
+//    {
+//      GetHeaderAttribute (szContentType, "name=", szFilename);
+//    }
+//
+//    nExtension = -1;
+//    nFileType = 0xfff;
+//    if (strcmp (szFilename, "") == 0)
+//    {
+//      sprintf (szFilename, "File%03d", gnFileNumber);
+//      gnFileNumber++;
+//    }
+//    else
+//    {
+//      // Converts dots to slashes and spaces to underscores
+//      nConvertPos = 0;
+//      while (szFilename[nConvertPos] >= 0x20)
+//      {
+//        switch (szFilename[nConvertPos])
+//        {
+//          case '.':
+//            szFilename[nConvertPos] = '/';
+//            nExtension = nConvertPos + 1;
+//            break;
+//          case ' ':
+//            szFilename[nConvertPos] = '_';
+//            break;
+//          default:
+//            break;
+//        }
+//        nConvertPos++;
+//      }
+//    }
+//
+//    nConvertPos = 0;
+//    while ((szContentType[nConvertPos] > 0x20)
+//      && (szContentType[nConvertPos] != ';'))
+//    {
+//      nConvertPos++;
+//    }
+//    szContentType[nConvertPos] = 0;
+//
+//    if ((strlcmp (szContentType, "application/octet-stream") == 0)
+//      || (strcmp (szContentType, "") == 0))
+//    {
+//      if (nExtension >= 0)
+//      {
+//        xmimemaptranslate_extension_to_filetype (szFilename + nExtension,
+//          & nFileType);
+//      }
+//      else
+//      {
+//        nFileType = 0xffd;
+//      }
+//    }
+//    else
+//    {
+//      xmimemaptranslate_mime_type_to_filetype (szContentType, & nFileType);
+//    }
+//
+//    // Find the end of the header
+//    nPos = 0;
+//    while ((nPos < (nSize - 1))
+//      && (((pcInput[nPos] != 0x0a) && (pcInput[nPos] != 0x0d))
+//      || ((pcInput[nPos + 1] != 0x0a) && (pcInput[nPos + 1] != 0x0a))))
+//    {
+//      nPos++;
+//    }
+//    // Move past the separating line
+//    nPos += 2;
+//
+//    switch (eEncoding)
+//    {
+//      case CTENCODING_QUOTEDPRINTABLE:
+//        pcDecoded = malloc (nSize - nPos);
+//        nSizeOut = nSize - nPos;
+//        DecodeQuotedPrintable (pcInput + nPos, nSize - nPos, pcDecoded,
+//          & nSizeOut);
+//        err (xosfile_save_stamped (szFilename, nFileType, pcDecoded,
+//          pcDecoded + nSizeOut));
+//        free (pcDecoded);
+//        break;
+//      case CTENCODING_BASE64:
+//        pcDecoded = malloc (nSize - nPos);
+//        nSizeOut = nSize - nPos;
+//        DecodeBase64 (pcInput + nPos, nSize - nPos, pcDecoded, & nSizeOut);
+//        err (xosfile_save_stamped (szFilename, nFileType, pcDecoded,
+//          pcDecoded + nSizeOut));
+//        free (pcDecoded);
+//        break;
+//      case CTENCODING_PLAIN:
+//        // Just save out the file
+//        err (xosfile_save_stamped (szFilename, nFileType, pcInput + nPos,
+//          pcInput + nSize));
+//      default:
+//        break;
+//    }
+//  }
+//}
+
+//////////////////////////////////////////////////////////////////
+// Finds a MIME multipart boundary
+bool BoundaryFind (char * szInput, int nPos, int * pnMultiPre, int * pnMultiPost, int nSize, char * szBoundary, bool * pboFound)
+{
+  int                         nLength;
+  bool                        boFound;
+  int                         nNext;
+  bool                        boMore;
+
+  nLength = strlen (szBoundary);
+
+  boMore = FALSE;
+  boFound = FALSE;
+  while ((!boFound) && (nPos < nSize))
+  {
+    // Find the next line
+    nNext = nPos;
+    while ((nNext < nSize) && (szInput[nNext] >= 0x20))
+    {
+      nNext++;
+    }
+    nNext++;
+
+    if (strncmp (szInput + nPos, "--", 2) == 0)
+    {
+      if (strncmp (szInput + nPos + 2, szBoundary, nLength) == 0)
+      {
+//        printf ("Boundary found\n");
+        if (pnMultiPre)
+        {
+          *pnMultiPre = nPos;
+        }
+        if (pnMultiPost)
+        {
+          *pnMultiPost = nNext;
+        }
+        boFound = TRUE;
+
+        if (strncmp (szInput + nPos + 2 + nLength, "--", 2) == 0)
+        {
+          boMore = FALSE;
+        }
+        else
+        {
+          boMore = TRUE;
+        }
+      }
+    }
+
+    nPos = nNext;
+  }
+
+  if (pboFound)
+  {
+    *pboFound = boFound;
+  }
+
+  return boMore;
+}
+
+//////////////////////////////////////////////////////////////////
+// Get an attribute from a header line
+void GetHeaderAttribute (char * szHeaderVal, char * szAttributeName, char * szResult)
+{
+  char                        *szAttribute;
+  int                         nLength;
+
+  szResult[0] = 0;
+  szAttribute = strlstr (szHeaderVal, szAttributeName);
+  if (szAttribute)
+  {
+    szAttribute += strlen (szAttributeName);
+    if (szAttribute[0] == '"')
+    {
+      szAttribute++;
+      nLength = 0;
+      while ((szAttribute[nLength] != '"')
+        && (szAttribute[nLength] >= 0x20))
+      {
+        nLength++;
+      }
+      strncpy (szResult, szAttribute, nLength);
+      szResult[nLength] = 0;
+    }
+    else
+    {
+      nLength = 0;
+      while ((szAttribute[nLength] > 0x20) && (szAttribute[nLength] != ';'))
+      {
+        nLength++;
+      }
+      strncpy (szResult, szAttribute, nLength);
+      szResult[nLength] = 0;
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////
+// Determine whether a given character is valid base64
+inline bool Base64Valid (char cChar)
+{
+  bool                        boValid = FALSE;
+
+  if (((cChar >= 'A') && (cChar <= 'Z'))
+    || ((cChar >= 'a') && (cChar <= 'z'))
+    || ((cChar >= '0') && (cChar <= '9'))
+    || (cChar == '+') || (cChar == '/') || (cChar == '='))
+  {
+    boValid = TRUE;
+  }
+
+  return boValid;
+}
+
+//////////////////////////////////////////////////////////////////
+// Convert a base64 character to decimal
+inline int Base64Convert (char cChar)
+{
+  int                         nReturn = -1;
+
+  if ((cChar >= 'A') && (cChar <= 'Z'))
+  {
+    nReturn = cChar - 'A';
+  }
+  if ((cChar >= 'a') && (cChar <= 'z'))
+  {
+    nReturn = cChar - 'a' + 26;
+  }
+  if ((cChar >= '0') && (cChar <= '9'))
+  {
+    nReturn = cChar - '0' + 52;
+  }
+  if (cChar == '+')
+  {
+    nReturn = 62;
+  }
+  if (cChar == '/')
+  {
+    nReturn = 63;
+  }
+  if (cChar == '=')
+  {
+    nReturn = 0;
+  }
+
+  return nReturn;
+}
+
+//////////////////////////////////////////////////////////////////
+// Decode a base 64 MIME attachment to memory
+void DecodeBase64 (char * pcIn, int nInSize, char * pcOut, int * pnSizeOut)
+{
+  int                         nPos;
+  char                        szCurrent[4];
+  int                         nCurrent;
+  int                         nSizeOut;
+  char                        szDecoded[3];
+  int                         nMaxSize;
+
+  if (pnSizeOut)
+  {
+    nMaxSize = *pnSizeOut;
+  }
+  else
+  {
+    nMaxSize = nInSize;
+  }
+
+  nPos = 0;
+  nSizeOut = 0;
+  while ((nPos < nInSize) && (nSizeOut < nMaxSize))
+  {
+    for (nCurrent = 0; (nPos < nInSize) && (nCurrent < 4); nPos++)
+    {
+      if (Base64Valid(pcIn[nPos]))
+      {
+        szCurrent[nCurrent] = pcIn[nPos];
+        nCurrent++;
+      }
+    }
+
+    if (nCurrent != 0)
+    {
+      if (nCurrent != 4)
+      {
+        ShowWarningTag ("Er34");
+      }
+
+      // Now we've got four we can decode them
+      szDecoded[0] = (Base64Convert(szCurrent[0]) << 2)
+        + ((Base64Convert (szCurrent[1]) & 0x30) >> 4);
+
+      szDecoded[1] = ((Base64Convert(szCurrent[1]) & 0x0f) << 4)
+        + ((Base64Convert (szCurrent[2]) & 0x3c) >> 2);
+
+      szDecoded[2] = ((Base64Convert(szCurrent[2]) & 0x03) << 6)
+        + Base64Convert (szCurrent[3]);
+
+      if (szCurrent[3] != '=')
+      {
+        pcOut[nSizeOut++] = szDecoded[0];
+        pcOut[nSizeOut++] = szDecoded[1];
+        pcOut[nSizeOut++] = szDecoded[2];
+      }
+      else
+      {
+        if (szCurrent[2] != '=')
+        {
+          pcOut[nSizeOut++] = szDecoded[0];
+          pcOut[nSizeOut++] = szDecoded[1];
+        }
+        else
+        {
+          pcOut[nSizeOut++] = szDecoded[0];
+        }
+      }
+    }
+  }
+
+  if (pnSizeOut)
+  {
+    *pnSizeOut = nSizeOut;
+  }
+}
+
+//////////////////////////////////////////////////////////////////
+// Convert hex as ASCII into a char
+char ConvertHex (char * acHex)
+{
+  char                        cReturn = ' ';
+
+  if ((acHex[0] >= '0') && (acHex[0] <= '9'))
+  {
+    cReturn = (acHex[0] - '0') * 16;
+  }
+  else
+  {
+    if ((acHex[0] >= 'A') && (acHex[0] <= 'F'))
+    {
+      cReturn = (acHex[0] - 'A' + 10) * 16;
+    }
+  }
+
+  if ((acHex[1] >= '0') && (acHex[1] <= '9'))
+  {
+    cReturn += (acHex[1] - '0');
+  }
+  else
+  {
+    if ((acHex[1] >= 'A') && (acHex[1] <= 'F'))
+    {
+      cReturn += (acHex[1] - 'A' + 10);
+    }
+  }
+
+  return cReturn;
+}
+
+//////////////////////////////////////////////////////////////////
+// Decode a quoted printable MIME attachment to memory
+void DecodeQuotedPrintable (char * pcIn, int nInSize, char * pcOut, int * pnSizeOut)
+{
+  int                         nPos;
+  int                         nSizeOut;
+  int                         nSpacesStart;
+  bool                        boLineJoin;
+  char                        acHex[2];
+  int                         nMaxSize;
+
+  if (pnSizeOut)
+  {
+    nMaxSize = *pnSizeOut;
+  }
+  else
+  {
+    nMaxSize = nInSize;
+  }
+
+  // Only if there's an '=' or spaces at the end of a line
+  // do we need to do anything
+  boLineJoin = FALSE;
+  nSpacesStart = 0;
+  nSizeOut = 0;
+  nPos = 0;
+  while ((nPos < nInSize) && (nSizeOut < nMaxSize))
+  {
+    switch (pcIn[nPos])
+    {
+      case '=':
+        // Read in the following characters
+        acHex[0] = pcIn[nPos + 1];
+        if (acHex[0] <= 0x20)
+        {
+          boLineJoin = TRUE;
+          nSpacesStart = nSizeOut;
+        }
+        else
+        {
+          acHex[1] = pcIn[nPos + 2];
+          nPos += 2;
+          pcOut[nSizeOut++] = ConvertHex (acHex);
+          nSpacesStart = nSizeOut;
+        }
+        break;
+      case 0x0a:
+      case 0x0d:
+        // Backtrack to the last space
+        nSizeOut = nSpacesStart;
+        if (!boLineJoin)
+        {
+          pcOut[nSizeOut++] = 0x0a;
+          nSpacesStart = nSizeOut;
+        }
+        boLineJoin = FALSE;
+        break;
+      case ' ':
+        pcOut[nSizeOut++] = ' ';
+        break;
+      default:
+        pcOut[nSizeOut++] = pcIn[nPos];
+        nSpacesStart = nSizeOut;
+        boLineJoin = FALSE;
+        break;
+    }
+    nPos++;
+  }
+
+  if (pnSizeOut)
+  {
+    *pnSizeOut = nSizeOut;
+  }
+}
+
+//////////////////////////////////////////////////////////////////
+// Decrypt a MIME encoded message and produce a list
+int CreateMIMEList (char * * ppcInput, int nSize, MIMEDetails * * panList)
+{
+  int                         nAllocSuccess;
+
+  gnFileNumber = 0;
+  gnListMax = 0;
+  gnListPos = 0;
+  gpanList = panList;
+
+#if !defined _STANDALONE_TEST
+  nAllocSuccess = flex_alloc ((flex_ptr)gpanList, sizeof(MIMEDetails));
+#else
+  // 50 should be enough for testing!
+  *gpanList = malloc (sizeof(MIMEDetails) * 50);
+  gnListMax = 49;
+  nAllocSuccess = 1;
+#endif
+
+  if (nAllocSuccess == 1)
+  {
+    strcpy ((*gpanList)[gnListPos].szFileName, "");
+    (*gpanList)[gnListPos].nFileType = 0xfff;
+    (*gpanList)[gnListPos].boText = FALSE;
+    (*gpanList)[gnListPos].nStartPos = 0;
+    (*gpanList)[gnListPos].nSizePre = 0;
+    (*gpanList)[gnListPos].nSizePost = SIZE_INVALID;
+    (*gpanList)[gnListPos].eEncoding = CTENCODING_PLAIN;
+    (*gpanList)[gnListPos].boUseAttributes = FALSE;
+    (*gpanList)[gnListPos].uLoad = 0;
+    (*gpanList)[gnListPos].uExec = 0;
+    (*gpanList)[gnListPos].uAccess = 0;
+
+    gnListMax++;
+    CreateMIMEListRecurse (ppcInput, nSize, 0);
+
+#if defined _STANDALONE_TEST
+      printf ("\nTotal attachments : %d\n", gnListPos);
+#endif
+  }
+  else
+  {
+    ShowWarningTag ("Er35");
+  }
+  return gnListPos;
+}
+
+
+//////////////////////////////////////////////////////////////////
+// Decrypt a MIME encoded message and produce a list recursively
+void CreateMIMEListRecurse (char * * ppcInput, int nSize, int nOffset)
+{
+  char                        szHeaderVal[1024] = "";
+  char                        szFilename[1024] = "";
+  char                        szBoundary[1024] = "";
+  char                        szContentType[1024] = "";
+  char                        szROType[256] = "";
+  char                        szAttribute[256] = "";
+  int                         nPos = 0;
+  CTENCODING                  eEncoding;
+  bool                        boMore = FALSE;
+  bool                        boFound = FALSE;
+  int                         nMultiStartPre = 0;
+  int                         nMultiStartPost = 0;
+  int                         nMultiEndPre = 0;
+  int                         nMultiEndPost = 0;
+//  char                        *pcDecoded;
+//  int                         nSizeOut;
+  int                         nConvertPos;
+  int                         nFileType;
+  int                         nExtension;
+  int                         nAllocSuccess = 0;
+  bool                        boUseAttributes = FALSE;
+  unsigned int                uLoad;
+  unsigned int                uExec;
+  unsigned int                uAccess;
+
+  GetHeaderValue ("Content-Type:", *ppcInput + nOffset, nSize, szHeaderVal,
+    sizeof (szHeaderVal));
+
+  if (strnlcmp (szHeaderVal, "multipart/", 10) == 0)
+  {
+    // This is a multipart message
+
+    // Find the sections and recursively re-evaluate them
+    GetHeaderAttribute (szHeaderVal, "boundary=", szBoundary);
+
+    // Find the end of the header
+    nPos = nOffset;
+    while ((nPos < (nOffset + nSize - 1))
+      && ((((*ppcInput)[nPos] != 0x0a) && ((*ppcInput)[nPos] != 0x0d))
+      || (((*ppcInput)[nPos + 1] != 0x0a)
+      && ((*ppcInput)[nPos + 1] != 0x0a))))
+    {
+      nPos++;
+    }
+    // Move past the separating line
+    nPos += 2;
+
+    // Now we need to search through for each boundary
+    boMore = BoundaryFind (*ppcInput + nPos, 0,
+      & nMultiStartPre, & nMultiStartPost, nSize + nOffset - nPos,
+      szBoundary, NULL);
+    while ((boMore) && (nMultiStartPost < (nOffset + nSize)))
+    {
+      boMore = BoundaryFind (*ppcInput + nPos, nMultiStartPost,
+        & nMultiEndPre, & nMultiEndPost, nSize + nOffset - nPos, szBoundary,
+        & boFound);
+
+      if (boFound)
+      {
+        CreateMIMEListRecurse (ppcInput,
+          nMultiEndPre - nMultiStartPost - 1, nPos + nMultiStartPost);
+      }
+      else
+      {
+#if defined _DEBUG
+        printf ("Boundary: %s\n", szBoundary);
+        printf ("At position %d\n", (nPos + nMultiStartPost));
+#endif
+        ShowWarningTag ("Er36");
+      }
+
+      nMultiStartPre = nMultiEndPre;
+      nMultiStartPost = nMultiEndPost;
+    }
+  }
+  else
+  {
+    // This is not a multipart message
+
+    // What's the encoding?
+    eEncoding = CTENCODING_PLAIN;
+    GetHeaderValue ("Content-Transfer-Encoding", *ppcInput + nOffset, nSize,
+      szHeaderVal, sizeof (szHeaderVal));
+
+    if (strlcmp (szHeaderVal, "quoted-printable") == 0)
+    {
+      eEncoding = CTENCODING_QUOTEDPRINTABLE;
+    }
+    if (strlcmp (szHeaderVal, "base64") == 0)
+    {
+      eEncoding = CTENCODING_BASE64;
+    }
+
+    // What's the filename?
+    GetHeaderValue ("Content-Disposition", *ppcInput + nOffset, nSize,
+      szHeaderVal, sizeof (szHeaderVal));
+
+    GetHeaderAttribute (szHeaderVal, "filename=", szFilename);
+
+    GetHeaderValue ("Content-Type", *ppcInput + nOffset, nSize,
+      szContentType, sizeof (szContentType));
+    if (strcmp (szFilename, "") == 0)
+    {
+      GetHeaderAttribute (szContentType, "name=", szFilename);
+    }
+
+    nExtension = -1;
+    nFileType = 0xfff;
+    if (strcmp (szFilename, "") == 0)
+    {
+      sprintf (szFilename, Tag("AttAnon"), gnFileNumber);
+      gnFileNumber++;
+    }
+    else
+    {
+      // Converts dots to slashes and spaces to underscores
+      nExtension = ConvertFilenameToRISCOS (szFilename);
+    }
+
+    // Establish its attributes (if they're there)
+    uLoad = 0u;
+    uExec = 0u;
+    uAccess = 0u;
+    szAttribute[0] = 0;
+    boUseAttributes = TRUE;
+    GetHeaderAttribute (szContentType, "load=", szAttribute);
+    if (strlen (szAttribute) > 0)
+    {
+      sscanf (szAttribute, "&%x", & uLoad);
+    }
+    else
+    {
+      boUseAttributes = FALSE;
+    }
+    szAttribute[0] = 0;
+    GetHeaderAttribute (szContentType, "exec=", szAttribute);
+    if (strlen (szAttribute) > 0)
+    {
+      sscanf (szAttribute, "&%x", & uExec);
+    }
+    else
+    {
+      boUseAttributes = FALSE;
+    }
+    szAttribute[0] = 0;
+    GetHeaderAttribute (szContentType, "access=", szAttribute);
+    if (strlen (szAttribute) > 0)
+    {
+      sscanf (szAttribute, "&%x", & uAccess);
+    }
+    else
+    {
+      boUseAttributes = FALSE;
+    }
+
+    // In case it's an 'application/riscos' file
+    GetHeaderAttribute (szContentType, "type=", szROType);
+
+    nConvertPos = 0;
+    while ((szContentType[nConvertPos] > 0x20)
+      && (szContentType[nConvertPos] != ';'))
+    {
+      nConvertPos++;
+    }
+    szContentType[nConvertPos] = 0;
+
+    if ((strlcmp (szContentType, "application/octet-stream") == 0)
+      || (strcmp (szContentType, "") == 0))
+    {
+      if (nExtension >= 0)
+      {
+        xmimemaptranslate_extension_to_filetype (szFilename + nExtension,
+          & nFileType);
+      }
+      else
+      {
+        if (strcmp (szContentType, "") == 0)
+        {
+          nFileType = 0xfff;
+        }
+        else
+        {
+          nFileType = 0xffd;
+        }
+      }
+    }
+    else
+    {
+      if ((strlcmp (szContentType, "application/riscos") == 0)
+        && (strlen (szROType) > 0))
+      {
+        xmimemaptranslate_filetype_name_to_filetype (szROType, & nFileType);
+      }
+      else
+      {
+        xmimemaptranslate_mime_type_to_filetype (szContentType, & nFileType);
+      }
+    }
+
+    // Find the end of the header
+    nPos = nOffset;
+    while ((nPos < (nOffset + nSize - 1))
+      && ((((*ppcInput)[nPos] != 0x0a) && ((*ppcInput)[nPos] != 0x0d))
+      || (((*ppcInput)[nPos + 1] != 0x0a)
+      && ((*ppcInput)[nPos + 1] != 0x0a))))
+    {
+      nPos++;
+    }
+    // Move past the separating line
+    nPos += 2;
+
+    nAllocSuccess = 1;
+    if (gnListPos >= gnListMax)
+    {
+#if !defined _STANDALONE_TEST
+      // Allocate more memory for the list
+      gnListMax++;
+      nAllocSuccess = flex_extend ((flex_ptr)gpanList,
+        gnListMax * sizeof(MIMEDetails));
+#else
+      nAllocSuccess = 0;
+#endif
+      if (nAllocSuccess != 1)
+      {
+        gnListMax--;
+        ShowWarningTag ("Er35");
+      }
+    }
+
+    if (nAllocSuccess == 1)
+    {
+#if defined _STANDALONE_TEST
+      printf ("Filename : %s\n", szFilename);
+      printf ("Filetype &%x\n", nFileType);
+      printf ("Start %d\n", nPos);
+      printf ("Size %d\n", (nSize + nOffset - nPos));
+      printf ("Encoding %d\n", eEncoding);
+#endif
+      strncpy((*gpanList)[gnListPos].szFileName, szFilename,
+        MIME_LEAFNAME_MAX);
+      (*gpanList)[gnListPos].szFileName[MIME_LEAFNAME_MAX - 1] = 0;
+      (*gpanList)[gnListPos].nFileType = nFileType;
+      if ((strnlcmp (szContentType, "text/", 5) == 0)
+        || (nFileType == 0xfff))
+      {
+        (*gpanList)[gnListPos].boText = TRUE;
+      }
+      else
+      {
+        (*gpanList)[gnListPos].boText = FALSE;
+      }
+      (*gpanList)[gnListPos].nStartPos = nPos;
+      (*gpanList)[gnListPos].nSizePre = nSize + nOffset - nPos;
+      (*gpanList)[gnListPos].nSizePost = SIZE_INVALID;
+      (*gpanList)[gnListPos].eEncoding = eEncoding;
+      (*gpanList)[gnListPos].boUseAttributes = boUseAttributes;
+      (*gpanList)[gnListPos].uLoad = uLoad;
+      (*gpanList)[gnListPos].uExec = uExec;
+      (*gpanList)[gnListPos].uAccess = uAccess;
+      gnListPos++;
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////
+// Compare two characters ignoring case
+inline int chrlcmp (char cChar1, char cChar2)
+{
+  if ((cChar1 >= 'A') && (cChar1 <= 'Z'))
+  {
+    cChar1 += 'a' - 'A';
+  }
+  if ((cChar2 >= 'A') && (cChar2 <= 'Z'))
+  {
+    cChar2 += 'a' - 'A';
+  }
+
+  return (int)(cChar1 - cChar2);
+}
+
+//////////////////////////////////////////////////////////////////
+// Compare two strings ignoring case
+int strlcmp (char * szString1, char * szString2)
+{
+  int                         nPos;
+
+  nPos = 0;
+  while ((chrlcmp (szString1[nPos], szString2[nPos]) == 0)
+    && (szString1[nPos] != 0))
+  {
+    nPos++;
+  }
+
+  return chrlcmp (szString1[nPos], szString2[nPos]);
+}
+
+//////////////////////////////////////////////////////////////////
+// Compare two bounded strings ignoring case
+int strnlcmp (char * szString1, char * szString2, int nLength)
+{
+  int                         nPos;
+
+  nLength--;
+  nPos = 0;
+  while ((chrlcmp (szString1[nPos], szString2[nPos]) == 0)
+    && (szString1[nPos] != 0) && (nPos < nLength))
+  {
+    nPos++;
+  }
+
+  return chrlcmp (szString1[nPos], szString2[nPos]);
+}
+
+//////////////////////////////////////////////////////////////////
+// Find a substring ignoring case
+char * strlstr (char * szString1, char * szString2)
+{
+  int                         nPos;
+  int                         nSubPos;
+  char                        *szReturn;
+  char                        cFirst;
+
+  if (szString2[0] != 0)
+  {
+    nPos = 0;
+    szReturn = NULL;
+    cFirst = szString2[0];
+
+    while ((szString1[nPos] > 0) && (szReturn == NULL))
+    {
+      if (chrlcmp (szString1[nPos], cFirst) == 0)
+      {
+        nSubPos = 0;
+        while ((chrlcmp(szString1[nPos + nSubPos], szString2[nSubPos]) == 0)
+          && szString2[nSubPos])
+        {
+          nSubPos++;
+        }
+        if (szString2[nSubPos] == 0)
+        {
+          szReturn = szString1 + nPos;
+        }
+      }
+      nPos++;
+    }
+  }
+  else
+  {
+    szReturn = szString1;
+  }
+
+  return szReturn;
+}
+
+//////////////////////////////////////////////////////////////////
+// Convert a decimal character to base64
+inline char Base64Decimal (int nValue)
+{
+  char                        cChar = 0;
+
+  if ((nValue >= 0) && (nValue <= 64))
+  {
+    cChar = gacCharList[nValue];
+  }
+
+  return cChar;
+}
+
+//////////////////////////////////////////////////////////////////
+// Encode a base 64 MIME attachment to memory
+void EncodeBase64 (char * pcIn, int nInSize, char * pcOut, int * pnSizeOut)
+{
+  int                         nPos;
+  char                        szCurrent[3];
+  int                         nCurrent;
+  int                         nSizeOut;
+  char                        szEncoded[4];
+  int                         nMaxSize;
+
+  if (pnSizeOut)
+  {
+    nMaxSize = *pnSizeOut;
+  }
+  else
+  {
+    nMaxSize = nInSize;
+  }
+
+  nPos = 0;
+  nSizeOut = 0;
+  while ((nPos < nInSize) && ((nSizeOut + 3)< nMaxSize))
+  {
+    szCurrent[0] = 0;
+    szCurrent[1] = 0;
+    szCurrent[2] = 0;
+    for (nCurrent = 0; (nPos < nInSize) && (nCurrent < 3); nPos++)
+    {
+      szCurrent[nCurrent] = pcIn[nPos];
+      nCurrent++;
+    }
+
+    if (nCurrent != 0)
+    {
+      // Now we've got three we can encode them
+      szEncoded[0] = Base64Decimal ((char)((szCurrent[0] >> 2) & 0x3f));
+
+      szEncoded[1] = Base64Decimal ((char)((((szCurrent[0] & 0x03) << 4)
+       + ((szCurrent[1] & 0xf0) >> 4)) & 0x3f));
+
+      szEncoded[2] = Base64Decimal ((char)((((szCurrent[1] & 0x0f) << 2)
+       + ((szCurrent[2] & 0xc0) >> 6)) & 0x3f));
+
+      szEncoded[3] = Base64Decimal ((char)((szCurrent[2] & 0x3f)));
+
+      if (nCurrent <= 2)
+      {
+        szEncoded[3] = '=';
+      }
+      if (nCurrent <= 1)
+      {
+        szEncoded[2] = '=';
+      }
+
+      pcOut[nSizeOut++] = szEncoded[0];
+      pcOut[nSizeOut++] = szEncoded[1];
+      pcOut[nSizeOut++] = szEncoded[2];
+      pcOut[nSizeOut++] = szEncoded[3];
+    }
+  }
+
+  if (pnSizeOut)
+  {
+    *pnSizeOut = nSizeOut;
+  }
+}
+
+#if defined _STANDALONE_TEST
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+// These functions should not be included in the linked version
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////////////////////////////
+// main
+int main (int argc, char * argv[])
+{
+  char                        *szFileIn;
+  char                        *pcInput;
+  int                         nSize;
+  char                        szHeaderVal[1024] = "";
+  MIMEDetails                 *anList;
+  char                        *pcOutput;
+  int                         nOutputSize;
+
+  if (argc != 3)
+  {
+    printf ("Syntax: *Mime <D|E> <File in>\n");
+    return 0;
+  }
+  szFileIn = argv[2];
+
+  if (strcmp (argv[1], "D") == 0)
+  {
+    // Reset the file number
+    gnFileNumber = 0;
+
+    // Load the file
+    pcInput = LoadFile (szFileIn, & nSize);
+
+    if (pcInput)
+    {
+      // Check if it's mime
+      GetHeaderValue ("MIME-Version", pcInput, nSize, szHeaderVal,
+        sizeof (szHeaderVal));
+//      printf ("- %s -\n", szHeaderVal);
+
+      if (strcmp (szHeaderVal, "1.0") == 0)
+      {
+        printf ("Mime email\n\n");
+
+        // This is a MIME email
+        CreateMIMEList (& pcInput, nSize, & anList);
+      }
+
+      // Free up the memory allocated for the input file
+      free (pcInput);
+    }
+
+    printf ("Completed\n");
+  }
+
+  if (strcmp (argv[1], "E") == 0)
+  {
+    pcInput = LoadFile (szFileIn, & nSize);
+
+    nOutputSize = ((nSize * 4) + 4) / 3;
+    pcOutput = malloc (nOutputSize);
+
+    printf ("In size %d\n", nSize);
+    printf ("Out size %d\n", nOutputSize);
+
+    EncodeBase64 (pcInput, nSize, pcOutput, & nOutputSize);
+
+    osfile_save_stamped ("OutFile", 0xfff, pcOutput, pcOutput + nOutputSize);
+
+    free (pcOutput);
+
+    printf ("Completed\n");
+  }
+
+  return 0;
+}
+
+void ShowWarningTag (char * szTag)
+{
+  printf (szTag);
+}
+
+//////////////////////////////////////////////////////////////////
+// Load a file into a block of memory
+char * LoadFile (char * szFilename, int * pnSize)
+{
+  char                        *pcMemory;
+  int                         nSize;
+
+  xosfile_read_stamped_no_path (szFilename, NULL, NULL, NULL, & nSize,
+    NULL, NULL);
+
+  if (nSize > 0)
+  {
+    if (pnSize)
+    {
+      *pnSize = nSize;
+    }
+    pcMemory = malloc (nSize);
+
+    if (pcMemory)
+    {
+      osfile_load_stamped_no_path (szFilename, pcMemory,
+        NULL, NULL, NULL, NULL);
+    }
+  }
+  else
+  {
+    pcMemory = NULL;
+  }
+
+  return pcMemory;
+}
+
+char * Tag (char * szTag)
+{
+  szTag = szTag;
+  return "File%03d";
+}
+
+#endif /* _STANDALONE_TEST */
+
+//////////////////////////////////////////////////////////////////
+// Clear all of the details in a MIMEEditDetails structure
+void ClearMIMEEditDetails (MIMEEditDetails * psDetails)
+{
+  strncpy (psDetails->szFileName, "", MIME_FILENAME_MAX);
+  strncpy (psDetails->szLeafName, "", MIME_LEAFNAME_MAX);
+  psDetails->nFileType = 0;
+  psDetails->pcFileStart = NULL;
+  psDetails->nFileSize = 0;
+  psDetails->boUseAttributes = FALSE;
+  psDetails->uLoad = 0u;
+  psDetails->uExec = 0u;
+  psDetails->uAccess = 0u;
+}
+
+//////////////////////////////////////////////////////////////////
+// Free all of the details in a MIMEEditDetails structure
+void FreeMIMEEditDetails (MIMEEditDetails * psDetails)
+{
+  strncpy (psDetails->szFileName, "", MIME_FILENAME_MAX);
+  strncpy (psDetails->szLeafName, "", MIME_LEAFNAME_MAX);
+  psDetails->nFileType = 0;
+  psDetails->uLoad = 0u;
+  psDetails->uExec = 0u;
+  psDetails->uAccess = 0u;
+
+  if (psDetails->pcFileStart != NULL)
+  {
+    flex_free ((flex_ptr)(& psDetails->pcFileStart));
+    psDetails->pcFileStart = NULL;
+  }
+  psDetails->nFileSize = 0;
+}
+
+//////////////////////////////////////////////////////////////////
+// Move all of the details between two MIMEEditDetails structures
+int MoveMIMEEditDetails (MIMEEditDetails * psDetailsTo, MIMEEditDetails * psDetailsFrom)
+{
+  int                         nSuccess;
+
+  FreeMIMEEditDetails (psDetailsTo);
+  strncpy (psDetailsTo->szFileName, psDetailsFrom->szFileName,
+    MIME_FILENAME_MAX);
+  strncpy (psDetailsTo->szLeafName, psDetailsFrom->szLeafName,
+    MIME_LEAFNAME_MAX);
+
+  psDetailsTo->nFileType = psDetailsFrom->nFileType;
+
+  if (psDetailsFrom->pcFileStart != NULL)
+  {
+    nSuccess = flex_reanchor ((flex_ptr)(& psDetailsTo->pcFileStart),
+      (flex_ptr)(& psDetailsFrom->pcFileStart));
+  }
+  else
+  {
+    psDetailsTo->pcFileStart= NULL;
+    nSuccess = 1;
+  }
+  psDetailsFrom->pcFileStart = NULL;
+
+  psDetailsTo->nFileSize = psDetailsFrom->nFileSize;
+  psDetailsTo->boUseAttributes = psDetailsFrom->boUseAttributes;
+  psDetailsTo->uLoad = psDetailsFrom->uLoad;
+  psDetailsTo->uExec = psDetailsFrom->uExec;
+  psDetailsTo->uAccess = psDetailsFrom->uAccess;
+
+  FreeMIMEEditDetails (psDetailsFrom);
+
+  return nSuccess;
+}
+
+//////////////////////////////////////////////////////////////////
+// Find the position of a leafname from a longer filename
+char * FindLeafName (char * szFileName)
+{
+  char                        *szPos;
+
+  szPos = strrchr (szFileName, '.');
+  if (szPos == NULL)
+  {
+    szPos = strrchr (szFileName, ':');
+  }
+
+  if ((szPos == NULL) || (szPos[0] == 0))
+  {
+    szPos = szFileName - 1;
+  }
+
+  szPos++;
+
+  return szPos;
+}
+
+//////////////////////////////////////////////////////////////////
+// Convert a leafname by converting dots to slashes etc.
+int ConvertFilenameToRISCOS (char * szFilename)
+{
+  int                         nConvertPos;
+  int                         nExtension = -1;
+
+  // Converts dots to slashes and spaces to underscores
+  nConvertPos = 0;
+  while (szFilename[nConvertPos] >= 0x20)
+  {
+    switch (szFilename[nConvertPos])
+    {
+      case '.':
+        szFilename[nConvertPos] = '/';
+        nExtension = nConvertPos + 1;
+        break;
+      case ' ':
+        szFilename[nConvertPos] = '_';
+        break;
+      default:
+        break;
+    }
+    nConvertPos++;
+  }
+
+  return nExtension;
+}
+
+//////////////////////////////////////////////////////////////////
+// Convert a leafname by converting slashes to dots etc.
+int ConvertFilenameFromRISCOS (char * szFilename)
+{
+  int                         nConvertPos;
+  int                         nExtension = -1;
+
+  // Converts slashes to dots
+  nConvertPos = 0;
+  while (szFilename[nConvertPos] >= 0x20)
+  {
+    switch (szFilename[nConvertPos])
+    {
+      case '/':
+        szFilename[nConvertPos] = '.';
+        nExtension = nConvertPos + 1;
+        break;
+      default:
+        break;
+    }
+    nConvertPos++;
+  }
+
+  return nExtension;
+}

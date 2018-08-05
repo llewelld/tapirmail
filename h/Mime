@@ -1,0 +1,92 @@
+//////////////////////////////////////////////////////////////////
+// Mime
+//
+// C program shell for rapid application development
+// The Flying Pig!
+// Started 17/7/2003
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+// Includes
+
+#include "oslib/types.h"
+
+//////////////////////////////////////////////////////////////////
+// Defines
+
+//#define _DEBUG
+
+//#define _STANDALONE_TEST
+
+#define MIME_LEAFNAME_MAX     (256)
+#define MIME_FILENAME_MAX     (256)
+#define SIZE_INVALID          (-1)
+
+#ifndef TRUE
+#define TRUE                  (1)
+#endif
+#ifndef FALSE
+#define FALSE                 (0)
+#endif
+
+//////////////////////////////////////////////////////////////////
+// Structures
+
+typedef enum
+{
+  CTENCODING_INVALID = -1,
+
+  CTENCODING_PLAIN,
+  CTENCODING_QUOTEDPRINTABLE,
+  CTENCODING_BASE64,
+
+  CTENCODING_NUM
+} CTENCODING;
+
+typedef struct _MIMEDetails
+{
+  char         szFileName[MIME_LEAFNAME_MAX];
+  int          nFileType;
+  bool         boText;
+  int          nStartPos;
+  int          nSizePre;
+  int          nSizePost;
+  CTENCODING   eEncoding;
+  bool         boUseAttributes;
+  unsigned int uLoad;
+  unsigned int uExec;
+  unsigned int uAccess;
+} MIMEDetails;
+
+typedef struct _MIMEEditDetails
+{
+  char         szFileName[MIME_FILENAME_MAX];
+  char         szLeafName[MIME_LEAFNAME_MAX];
+  int          nFileType;
+  char         *pcFileStart;
+  int          nFileSize;
+  bool         boUseAttributes;
+  unsigned int uLoad;
+  unsigned int uExec;
+  unsigned int uAccess;
+} MIMEEditDetails;
+
+//////////////////////////////////////////////////////////////////
+// Function prototypes
+int     CreateMIMEList        (char * * ppcInput, int nSize, MIMEDetails * * panList);
+int strlcmp (char * szString1, char * szString2);
+int strnlcmp (char * szString1, char * szString2, int nLength);
+char * strlstr (char * szString1, char * szString2);
+void GetHeaderValue (char * szHeader, char * pcMailStart, int nMailSize, char * szBuffer, int nBufferSize);
+void DecodeBase64 (char * pcIn, int nInSize, char * pcOut, int * pnSizeOut);
+void DecodeQuotedPrintable (char * pcIn, int nInSize, char * pcOut, int * pnSizeOut);
+void EncodeBase64 (char * pcIn, int nInSize, char * pcOut, int * pnSizeOut);
+
+void ClearMIMEEditDetails (MIMEEditDetails * psDetails);
+void FreeMIMEEditDetails (MIMEEditDetails * psDetails);
+int MoveMIMEEditDetails (MIMEEditDetails * psDetailsTo, MIMEEditDetails * psDetailsFrom);
+char * FindLeafName (char * szFileName);
+int ConvertFilenameToRISCOS (char * szFilename);
+int ConvertFilenameFromRISCOS (char * szFilename);
+
+

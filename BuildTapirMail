@@ -1,0 +1,7 @@
+dir <Obey$Dir>
+
+gcc -O1 -mthrowback -IOSLib: -IOSLibSupport: -IStubsG: -c -Werror TapirMail.c
+
+gcc TapirMail.o Blowfish.o Mime.o md5.o OSLibSupport:OSLibSupport32.o OSLib:OSLib32.o StubsG:flexlib.flexlib-32.o StubsG:clib.StubsG.o  -o !TapirMail.!RunImage
+
+echo Build complete: TapirMail

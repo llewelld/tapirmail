@@ -1,0 +1,325 @@
+Tsk:TapirMail
+Icn:!TapirMail
+Menu1:TapirMail,->Info,Account,New accountå,Choiceså,Addresseså,-Lock,Quit
+Menu2:Inbox,-Check mail,Selection,Send,Select,-Account,Stop
+Menu2-0:Selection,Open,Download,Save,Forget,Delete
+Menu2-1:Send,Newå,Replyå,Reply to allå,Forwardå
+Menu2-2:Select,All,None,Invert
+Menu2-3:Account,Profileå,Settingså
+Menu3:Email,Save,-Attachments,Edit,Send,Header
+Menu3-0:Edit,Cut,Copy,Paste,Clear,Snip
+Menu3-1:Send,Replyå,Reply to allå,Forwardå
+Menu4:New email,Save,-Attachments,Edit,Send,CC & BCC
+Menu4-0:Edit,Cut,Copy,Paste,Clear,Snip
+Menu1R:TapirMail,->Info,Account,New accountå,Choiceså,Addresseså,-Lock,Registerå,Quit
+
+Website:http://www.flypig.co.uk/tapirmail/
+Email:mailto:tapirmail@flypig.co.uk
+WebReg:http://www.flypig.co.uk/tapirmail/register.htm
+
+AccMenu:Account
+AddMenu:Address
+AttMenu:Attachments
+EdAttMenu:Attachments
+AddNew:New address
+AddFile:Addresses
+AttAnon:File%03d
+None:None
+ForwardBegin:---------- Begin forwarded message ----------
+ForwardEnd:----------- End forwarded message -----------
+Reply:On %s you wrote:
+ReplyToAll:On %s, %s wrote:
+File:TapirMail
+Number:N∫
+Thanks:Thankyou for registering TapirMail!
+Unreg:Unregistered
+EditTitle:Edit email
+SaveEmail:Email00
+SaveEmailSel:Selection
+SaveSel:Selection
+Snip:[snip]\n
+SnipMid:\n[snip]\n
+
+Mime00:This message is in MIME format which your mailer apparently does not support.
+Mime01:You either require a newer version of your software which supports MIME, or
+Mime02:a separate MIME decoding utility.  Alternatively, ask the sender of this
+Mime03:message to resend it in a different format.
+
+Er1:To save, drag the icon to a directory display
+Er2:Failed to allocate memory for selection
+Er3:Failed to send message: %0
+Er4:Not enough free memory to create editor window
+Er5:Cannot edit more than %0 emails at once
+Er6:Not enough memory to load email
+Er7:Not enough memory to display email
+Er8:Could not complete task because the mail server has desynced
+Er9:Server lookup failed
+Er10:Login error: '%0'
+Er11:Username error: '%0'
+Er12:Password error: '%0'
+Er13:Error downloading email list: '%0'
+Er14:Error downloading header: '%0'
+Er15:Error downloading email: '%0'
+Er16:Error deleting email: '%0'
+Er17:Operation has timed out
+Er18:You can't delete accounts while a transfer is in progress
+Er19:You can't change accounts while a transfer is in progress
+Er20:Failed to allocate memory to load file
+Er21:Failed to allocate memory to save file
+Er22:New passwords do not match - password has not been changed
+Er23:Previous password incorrect - password has not been changed
+Er24:You can't lock the accounts while a transfer is in progress
+Er25:You don't have enough free memory to do this
+Er26:There are more messages in your account than the maximum that can be displayed. Only the first %0 messages will be shown
+Er27:License file could not be saved to disc
+Er28:Invalid license key
+Er29:Sorry: This option is not available in the unregistered version
+Er30:Failed to allocate memory to download email
+Er31:No email accounts loaded. You must set up an account or unlock the accounts file before you can send emails
+Er32:TapirMail cannot send emails to more than %0 recipients
+Er33:Sorry, your address book is full and you can't store any more addresses
+Er34:Not a multiple of 4 valid base64 characters
+Er35:Failed to allocate memory for MIME decoding
+Er36:Incorrect MIME formatting
+Er37:SMTP server does not support LOGIN authentication
+Er38:SMTP server does not support PLAIN authentication
+Er39:SMTP server does not support CRAM-MD5 authentication
+Er40:Malformed CRAM-MD5 challenge
+Er41:A maximum of %0 attachments can be sent with each email
+Er42:Memory to store data could not be allocated
+Er43:Error sending data: cannot send multiple commands
+Er44:Flex error removing attachment
+Er45:Couldn't allocate sufficient memory for all of the attachments
+Er46:TapirMail can only send %0 attachments at once (only the first %0 attachments will be copied)
+
+Ms1:A transfer is currently in progress. Are you sure you want to stop it?
+Ms2:Are you sure you want to delete this account?
+Ms3:Are you sure you want to delete the selected emails?
+Ms4:A transfer is currently in progress. Are you sure you want to quit?
+Ms5:Are you sure you want to remove this email address from the list?
+Ms6:This email has been modified.
+Ms7:There are emails open that have been modified. Are you sure you want to quit?
+MsYes:Yes
+MsNo:No
+MsDiscard:Discard
+MsCancel:Cancel
+
+Col1:?
+Col2:#
+Col3:Size
+Col4:From
+Col5:Subject
+Col6:Date
+
+H1:This is the TapirMail program.|MIt is a POP3 email client that works entirely in memory.
+H2:This \w displays a list of the emails on the POP3 server.|M\Sselect an email.|M\Achange a selection.|M\Dsave the selected emails.
+H3:This \w displays details of any errors that occur.
+H3I0:\Sdismiss the error message.
+H4:This \w displays information about the application.
+H4I0:This is the name of the application.
+H4I1:This is the purpose of the application.
+H4I2:This is the author of the application.
+H4I3:This is the version of the application.
+H4I8:\Semail the author at tapirmail@flypig.co.uk.
+H4I9:\Sopen the TapirMail website at http://www.flypig.co.uk/tapirmail/.
+H4I10:This is who the program is registered to.
+H5:This is the dialogue box for saving files.
+H5I0:\Ssave the file with the pathname above.
+H5I1:\Sclose the Save dialogue box.
+H5I2:Enter a new leafname or pathname for the file here.
+H5I3:Drag the icon to a directory display to save the file.
+H6:You must answer the question before the requested action can be performed.
+H6I0:\Scontinue with the action that you requested.
+H6I5:\Shalt the action that you requested.
+H7:This \w allows you to alter the settings for your email account.
+H7I7:Enter a title for the account here. You can choose anything you like for this.
+H7I9:Enter your name here.
+H7I11:Enter your email address here.
+H7I13:Enter the address of your POP3 server here.|MYour email provider should tell you this.
+H7I15:Enter the port used by your POP3 server here. This is usually 110.
+H7I17:Enter your POP3 username here.|MYour email provider should tell you this.
+H7I18:Select this option to store your POP3 email server password with the account details.
+H7I20:Enter your POP3 email server password here.
+H7I22:Enter the address of your SMTP server here.|MYour email provider should tell you this.
+H7I24:Enter the port used by your SMTP server here. This is usually 25.
+H7I27:\Sensure no SMTP authentication is used.|MYour SMTP service provider should tell you if authentication is necessary.
+H7I28:\Suse PLAIN SMTP authentication.|MYour SMTP service provider should tell you if this is necessary.
+H7I29:\Suse LOGIN SMTP authentication.|MYour SMTP service provider should tell you if this is necessary.
+H7I30:\Suse CRAM-MD5 SMTP authentication.|MYour SMTP service provider should tell you if this is necessary.
+H7I31:When selected SMTP authentication will use your POP3 login and password details.
+H7I33:Enter your SMTP username here.|MYour email provider should tell you this.
+H7I34:Select this option to store your SMTP server password with the account details.
+H7I36:Enter your SMTP email server password here.
+H8:This \w is used to open one of your email accounts.
+H8I0:\Sshow a list of the accounts to choose from.
+H8I1:The account name is shown here.|MClick on the button to the right to change the account, or use the up and down cursor keys.
+H8I3:\Scancel the login operation.
+H8I4:\Slogin to the chosen account.
+H8I6:Enter the POP3 password for the account here.
+H8I8:Enter the SMTP password for the account here.
+H9:You must enter the correct password before you can use the program.
+H9I0:\Sleave the program locked.
+H9I1:\Sattempt to unlock access to the accounts.
+H9I3:Enter a password here to unlock access to the accounts.
+H10:Set the global choices for the program here.
+H10I3:To change the lock password, enter the current password and then the new password twice.
+H10I5:To change the lock password, enter the current password and then the new password twice.
+H10I7:To change the lock password, enter the current password and then the new password twice.
+H10I10:When selected, networking information will be sent to Reporter.|MThe Reporter module must be active for this to work.
+H10I14:Enter the format to display the details in the date column of the email list. See the help file for possible values.
+H10I17:\Smake the computer decide what the correct action for the Delete/Backspace/End keys should be.
+H10I19:This font is used to display local mail in the mail list view.|MClick \s on the button to the right to change the font.
+H10I20:\Schange the font used to display local mail in the mail list view.
+H10I22:This font is used to display remote mail in the mail list view.|MClick \s on the button to the right to change the font.
+H10I23:\Schange the font used to display remote mail in the mail list view.
+H10I27:This email account will be opened automatically when the program is started.|MClick \s on the button to the right to change it.
+H10I28:\Schange the account that is opened automatically when you start the program.
+H10I29:\Suse Iyonix style Delete/Backspace.|MThat is: Backspace deletes characters to the left of the cursor, Delete deletes characters to the right.
+H10I30:\Suse BBC style Delete/Backspace.|MThat is: Backspace and Delete both delete characters to the left of the cursor, Copy/End deletes characters to the right.
+H10I31:When selected common emoticons (smileys) will be displayed as graphics in the email and editor windows :)
+H11:Use the buttons to perform actions, or drag the edges of the columns to resize them.
+H11I0:Network activity is shown here:-|MRed indicates no sending or receiving of data.|MAmber indicates that the program is waiting for data.|MGreen indicates data being received.
+H11I1:\Scheck for new emails on the server for this account.
+H11I2:\Sdownload the selected emails from the server.
+H11I3:\Sforget the local copies of the selected emails. This will free up the memory used by them, but will not delete them from the server.
+H11I4:\Sdelete the emails from the server. This operation cannot be undone.
+H11I5:\Sbegin writing a new email.
+H11I6:\Sstop any network operations currently in progress.
+H11I7:\Sinvert the email selection.
+H12:Type your email into this \w.|M\Dselect a section of text or save a block of selected text.
+H13:Use the buttons to perform actions or send your email.|MDrag a file to this toolbar to send it as an attachment.
+H13I0:Enter the addresses of the people the email should be sent to here.
+H13I1:Enter a subject for your email here.
+H13I4:\Scut the currently selected text to the clipboard.|M\A'snip' the currently selected text and move it to the clipboard.
+H13I5:\Scopy the currently selected text to the clipboard.
+H13I6:\Spaste the contents of the clipboard at the caret position.
+H13I7:\Ssend the email.
+H13I8:\Ssave a copy of the email body.
+H13I9:Enter the addresses of the people the email should be carbon copied to here.
+H13I12:Enter the addresses of the people the email should be blind carbon copied to here. These addresses will not appear in the email.
+H13I13:When selected, the email will be blind carbon copied to your own account. This can be used to store copies of your 'Sent' mail.
+H13I14:\Stoggle CC and BCC header fields on and off. These fields allow the email to be copied to additional recipients.
+H13I15:\Ssend the email to recipients from your address list.
+H13I16:\Scarbon copy the email to recipients from your address list.
+H13I17:\Sblind carbon copy the email to recipients from your address list.
+H13I18:\Sview the email attachments.
+
+H14:An email is displayed in this \w.|M\Dselect a section of text or save a block of selected text.
+H15:Use the buttons to perform actions on the email.
+H15I0:The sender of the email is shown here.
+H15I1:The subject of the email is shown here.
+H15I4:\Scopy the currently selected text to the clipboard.
+H15I5:\Ssend a reply to the sender of this email.
+H15I6:\Ssend a reply to the sender and all recipients of this email.
+H15I7:\Sforward a copy of the email to a new recipient.
+H15I8:\Ssave a copy of the email.
+H15I9:\Stoggle the email header view on and off.
+H15I10:\Sadd the sender's email address to your address list.
+H15I11:\Sview the email attachments.
+H16I0:\Rsee information about the application.
+H16I1:\Rchoose an account to use.
+H16I2:\Senter the settings for an email account.
+H16I3:\Sopen the general choices \w.
+H16I4:\Sedit entries in the address list.
+H16I5:\Slock the program. When locked the correct password must be entered to access the accounts.
+H16I6:\Squit the application.
+H16I7:\Squit the application.
+H16IR:\Sregister TapirMail.
+H17I0:\Scheck the emails on the server.
+H17I1:\Rperform actions on the currently selected emails.
+H17I2:\Rsend an email.
+H17I3:\Rchange the currently selected emails.
+H17I4:\Rchange the account settings.
+H17I5:\Sstop any transfers currently in progress.
+H17I1I0:\Sdownload and open the selected emails.
+H17I1I1:\Sdownload the selected emails.
+H17I1I2:\Rsave the selected emails.
+H17I1I3:\Sforget the selected emails from the local inbox.
+H17I1I4:\Sdelete the selected emails from the server.
+H17I2I0:\Ssend a new email.
+H17I2I1:\Sreply to the sender of the selected email.
+H17I2I2:\Sreply to the sender and all recipients of the selected email.
+H17I2I3:\Sforward a copy of the selected email to a new recipient.
+H17I3I0:\Sselect all of the emails.
+H17I3I1:\Sclear the currently selected emails.
+H17I3I2:\Sinvert the email selection.
+H17I4I0:\Schange your POP3 and SMTP account details.
+H17I4I1:\Schange the account specific settings used in the program.
+H18I0:\Rsave the email.
+H18I1:\Rview the email attachments.
+H18I2:\Rperform actions on the currently selected text.
+H18I3:\Rresend the email.
+H18I4:\Stoggle the email header view on and off.
+H18I2I0:\Gyou cannot alter a downloaded email.
+H18I2I1:\Scopy the currently selected text to the clipboard.
+H18I2I2:\Gyou cannot alter a downloaded email.
+H18I2I3:\Sclear the current selection.
+H18I2I4:\Gyou cannot alter a downloaded email.
+H18I3I0:\Ssend a reply to the sender of this email.
+H18I3I1:\Ssend a reply to the sender and all recipients of this email.
+H18I3I2:\Sforward a copy of the email to a new recipient.
+H19:\Schoose the account to use.
+H20I0:\Rsave the email.
+H20I1:\Rview the email attachments.
+H20I2:\Rperform actions on the currently selected text.
+H20I3:\Ssend the email.
+H20I4:\Stoggle CC and BCC header fields on and off. These fields allow the email to be copied to additional recipients.
+H20I2I0:\Scut the currently selected text to the clipboard.
+H20I2I1:\Scopy the currently selected text to the clipboard.
+H20I2I2:\Spaste the contents of the clipboard at the caret position.
+H20I2I3:\Sclear the current selection.
+H20I2I4:\S'snip' the currently selected text and move it to the clipboard.
+H21:\Schoose the account to use.
+H22:\Schoose the account that will be opened automatically when the program is started.
+H23:\Schoose the font used to display local mail in the mail list view.
+H24:\Schoose the font used to display remote mail in the mail list view.
+H25:Enter your registration details here to register the program.
+H25I0:Enter the name that the program will be registered to here.
+H25I2:Enter the registration key here. This will be provided to you when you register TapirMail.
+H25I5:\Svisit the registration page on the TapirMail website.
+H25I6:\Sclose the window without registering.
+H25I7:\Sregister this copy of TapirMail.
+H26:This \w allows you to alter the account specific settings used in the program.
+H26I2:If selected, new emails will be opened with the 'BCC to self' option automatically set.
+H26I6:If selected, new emails will be opened with the CC and BCC fields available.|MOtherwise these fields will initially be hidden.
+H26I8:Enter the address that emails will be sent to when the 'BCC to self' option is selected.|MLeave this blank to have emails sent to the address of the account.
+H26I10:The title of the account is shown here.
+H26I14:Enter a signature for the account here.|MThis will be added to the end of each email you create.
+H26I15:Enter a signature for the account here.|MThis will be added to the end of each email you create.
+H26I16:Enter a signature for the account here.|MThis will be added to the end of each email you create.
+H26I17:Enter a signature for the account here.|MThis will be added to the end of each email you create.
+H27:This \w allows you to add, change and delete entries in your address list.
+H27I1:The name of the address entry you are currently editing is shown here.|MClick on the button to the right to edit a different address.|MClick on the 'New' button below to create a blank entry.
+H27I2:\Schoose an address entry to edit.
+H27I3:\Sclose the \w without saving to disc.
+H27I4:\Sclose the \w and save all of the address entries to disc.
+H27I8:Enter or edit the name of the address list entry here.|MThis is the name that will appear in the address list.
+H27I10:Enter or edit the email address associated with the name here.|MThis is the email address that emails will be sent to when the name is chosen from the list.
+H27I11:\Sdelete this entry from the address list.
+H27I12:\Screate a new entry in the address list.
+H27I13:\Supdate or add this entry in the address list.
+H28:\Schoose an entry from the address list.
+H29:This is the dialogue box for saving attachments.
+H29I0:\Ssave the attachment with the pathname above.
+H29I1:\Sclose the Save dialogue box.
+H29I2:Enter a new leafname or pathname for the attachment here.
+H29I3:Drag the icon to a directory display to save the attachment.
+H30:\Rsave an attachment.
+H31I0:\Scancel any changes you have made.
+H31I1:\Saccept any changes and save all of your account details and choices to disc.
+H31I2:\Saccept any changes you have made.
+H31I3:\Sdelete this account entirely.
+H32I0:\Scancel any changes you have made.
+H32I1:\Saccept any changes and save all of your account details and choices to disc.
+H32I2:\Saccept any changes you have made.
+H33I0:\Scancel any changes you have made.
+H33I1:\Saccept any changes and save all of your account details and choices to disc.
+H33I2:\Saccept any changes you have made.
+H34:\Rshow information about or remove the attachement.
+H35:This \w displays information about the attachment.|MThe size is given in bytes.
+H35I2:This is the filetype of the attachment.
+H35I3:These are the access rights of the attachment.
+H35I4:This is the size of the attachment in bytes.
+H35I5:This is the filename of the attachment.
+H35I7:This is the time stamp of the attachment.
+H35I10:\Sremove the attachment from the email.

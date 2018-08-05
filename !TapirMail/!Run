@@ -1,0 +1,26 @@
+| !Run file for !TapirMail
+| 1.08 (29 Jul 2009)
+
+IconSprites <Obey$Dir>.!Sprites
+Set TapirMail$Dir <Obey$Dir>
+
+| Store choices inside the !TapirMail directory
+Set TapirMail$ChoicesDir <TapirMail$Dir>
+Set TapirMail$ChoicesWrite <TapirMail$Dir>
+Set TapirMail$LicenseDir <TapirMail$Dir>
+Set TapirMail$LicenseWrite <TapirMail$Dir>
+Set TapirMail$AddressDir <TapirMail$Dir>
+Set TapirMail$AddressWrite <TapirMail$Dir>
+
+| Store choices inside the !Boot Choices directory
+|Set TapirMail$ChoicesDir <Choices$Dir>.TapirMail
+|Set TapirMail$ChoicesWrite <Choices$Write>.TapirMail
+|Set TapirMail$LicenseDir <Choices$Dir>.TapirMail
+|Set TapirMail$LicenseWrite <Choices$Write>.TapirMail
+|Set TapirMail$AddressDir <Choices$Dir>.TapirMail
+|Set TapirMail$AddressWrite <Choices$Write>.TapirMail
+
+If "<Alias$URLOpen_mailto>" = "" Then Set Alias$URLOpen_mailto Run <TapirMail$Dir>.!Run -url %%*0
+
+WimpSlot -min 1248k -max 1248k
+<TapirMail$Dir>.!RunImage %*0

@@ -1,0 +1,9 @@
+dir <Obey$Dir>
+
+remove !TapirMail.!RunImage
+remove o.Blowfish
+remove o.md5
+remove o.Mime
+remove o.TapirMail
+
+echo Clean complete
