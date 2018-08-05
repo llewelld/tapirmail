@@ -34,7 +34,7 @@ Obey BuildClean
 
 ## Licence
 
-TapirMail is open source, released under an MIT licence. See the LICENCE
+TapirMail is open source, released under an MIT licence. See the LICENSE
 file.
 
 ## Contact
